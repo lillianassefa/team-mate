@@ -4,12 +4,18 @@ from fastapi import FastAPI
 from typing import Dict, List
 from weaviate import setup_weaviate_interface
 from openai import OpenAI
-
+from dotenv import load_dotenv
+import os
+import datetime
+load_dotenv()
+openai_key = os.getenv("OPENAI_API_KEY")
+weaviate_url = os.getenv("WEAVIATE_URL", "http://0.0.0.0:8080")
 # FastAPI application
 app = FastAPI()
 
 # Socket.IO server
 sio = socketio.AsyncServer(cors_allowed_origins="*", async_mode="asgi")
+
 # Wrap with ASGI application
 socket_app = socketio.ASGIApp(sio)
 app.mount("/", socket_app)
@@ -67,7 +73,7 @@ async def handle_chat_message(sid, data):
         
        
         prompt = (
-          "You are an AI assistant tasked with helping develop a project for TeamMate, an AI-based personalized agent designed to optimize trainee time and focus. The project scope includes providing personalized interactions, adaptive learning and support, proactive planning and scheduling, blocker resolution, and enhancing collaboration among trainees."
+          "You are an AI-based personalized agent designed to optimize trainee time and focus. Your scope includes providing personalized interactions, adaptive learning and support, proactive planning and scheduling, blocker resolution, and enhancing collaboration among other trainees."
             f"\n\nUser message: {data.get('message')}"
         )
         
@@ -79,19 +85,20 @@ async def handle_chat_message(sid, data):
                 {"role": "user", "content": prompt}
             ]
         )
-        openai_response = completion.choices[0].message["content"]
-        
+        openai_response = completion.choices[0].message.content
+        print("type of openai respons", openai_response)
         response_message = {
             "id": data.get("id") + "_response",
-            "textResponse": openai_response,
+            "textResponse":  openai_response,
             "isUserMessage": False,
-            "timestamp": data.get("timestamp"),
+            "timestamp": "today",
             "isComplete": True,
         }
+        print("here is the response message", response_message)
         await sio.emit("textResponse", response_message, room=sid)
         sessions[session_id].append(response_message)
 
-        print(f"Message from {sid} in session {session_id}: {data.get('message')}")
+        print(f"Message from {sid} in session {session_id}: {openai_response}")
 
     else:
         print(f"No session ID provided by {sid}")
