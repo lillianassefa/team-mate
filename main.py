@@ -1,7 +1,9 @@
+import httpx
 import uvicorn
 import socketio
-from fastapi import FastAPI
+from fastapi import FastAPI, File, UploadFile
 from typing import Dict, List
+from chat.csv_loader import load_csv_to_weaviate
 from weaviate import setup_weaviate_interface
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -102,6 +104,34 @@ async def handle_chat_message(sid, data):
 
     else:
         print(f"No session ID provided by {sid}")
+@app.post("/upload_csv")
+async def upload_csv(file: UploadFile = File(...)):
+    try:
+        # Save the uploaded file temporarily
+        file_location = f"/tmp/{file.filename}"
+        with open(file_location, "wb+") as file_object:
+            file_object.write(file.file.read())
+
+        # Process the CSV file and upload data to Weaviate
+        await load_csv_to_weaviate(file_location)
+        return {"status": "success", "detail": "CSV file processed and data uploaded to Weaviate."}
+    except Exception as e:
+        return {"status": "error", "detail": str(e)}
+async def call_upload_csv(csv_file_path: str):
+    url = "http://0.0.0.0:6789/upload_csv"
+    files = {'file': open(csv_file_path, 'rb')}
+    
+    async with httpx.AsyncClient() as client:
+        response = await client.post(url, files=files)
+        print(response.json())
+
+
+@app.on_event("startup")
+async def trigger_csv_upload():
+    csv_file_path = "/home/lillian/tenacious/team-mate/chat/all_nov_jobs.csv" 
+    await call_upload_csv(csv_file_path)
+    return {"status": "success", "detail": "CSV upload triggered."}
+
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=6789, lifespan="on", reload=True)

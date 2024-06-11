@@ -6,22 +6,30 @@
       "properties": [
         {
           "name": "title",
-          "dataType": ["text"],
+          "dataType": [
+            "text"
+          ],
           "description": "The title of the document"
         },
         {
           "name": "content",
-          "dataType": ["text"],
+          "dataType": [
+            "text"
+          ],
           "description": "The entire content of the document"
         },
         {
           "name": "wordCount",
-          "dataType": ["int"],
+          "dataType": [
+            "int"
+          ],
           "description": "The word count of the content"
         },
         {
           "name": "url",
-          "dataType": ["text"],
+          "dataType": [
+            "text"
+          ],
           "description": "The URL of the document"
         }
       ]
@@ -32,17 +40,23 @@
       "properties": [
         {
           "name": "document",
-          "dataType": ["Document"],
+          "dataType": [
+            "Document"
+          ],
           "description": "Reference to document"
         },
         {
           "name": "text",
-          "dataType": ["text"],
+          "dataType": [
+            "text"
+          ],
           "description": "Content of the chunk"
         },
         {
           "name": "doc_name",
-          "dataType": ["text"],
+          "dataType": [
+            "text"
+          ],
           "description": "Document name"
         }
       ],
@@ -54,27 +68,37 @@
       "properties": [
         {
           "name": "prompt",
-          "dataType": ["text"],
+          "dataType": [
+            "text"
+          ],
           "description": "User prompt"
         },
         {
           "name": "responseText",
-          "dataType": ["text"],
+          "dataType": [
+            "text"
+          ],
           "description": "Chatbot response"
         },
         {
           "name": "liked",
-          "dataType": ["boolean"],
+          "dataType": [
+            "boolean"
+          ],
           "description": "Whether the response was liked"
         },
         {
           "name": "response_id",
-          "dataType": ["text"],
+          "dataType": [
+            "text"
+          ],
           "description": "Unique ID of the response"
         },
         {
           "name": "session_id",
-          "dataType": ["text"],
+          "dataType": [
+            "text"
+          ],
           "description": "Session ID associated with the response"
         }
       ],
@@ -86,12 +110,16 @@
       "properties": [
         {
           "name": "document",
-          "dataType": ["DocumentChunk"],
+          "dataType": [
+            "DocumentChunk"
+          ],
           "description": "Linked DocumentChunk"
         },
         {
           "name": "response",
-          "dataType": ["Response"],
+          "dataType": [
+            "Response"
+          ],
           "description": "The chatbot response"
         }
       ],
@@ -103,13 +131,108 @@
       "properties": [
         {
           "name": "response",
-          "dataType": ["Response"],
+          "dataType": [
+            "Response"
+          ],
           "description": "The chatbot response"
         },
         {
           "name": "referenced_response",
-          "dataType": ["Response"],
+          "dataType": [
+            "Response"
+          ],
           "description": "The referenced chatbot response"
+        }
+      ],
+      "vectorizer": "text2vec-openai"
+    },
+    {
+      "class": "JobPosting",
+      "description": "A class to store job postings",
+      "properties": [
+        {
+          "name": "title",
+          "dataType": [
+            "text"
+          ],
+          "description": "The title of the job posting"
+        },
+        {
+          "name": "company",
+          "dataType": [
+            "text"
+          ],
+          "description": "The company offering the job"
+        },
+        {
+          "name": "company_link",
+          "dataType": [
+            "text"
+          ],
+          "description": "The URL link to the company's website"
+        },
+        {
+          "name": "place",
+          "dataType": [
+            "text"
+          ],
+          "description": "The location of the job"
+        },
+        {
+          "name": "date",
+          "dataType": [
+            "date"
+          ],
+          "description": "The posting date of the job"
+        },
+        {
+          "name": "apply_link",
+          "dataType": [
+            "text"
+          ],
+          "description": "The URL link to apply for the job"
+        },
+        {
+          "name": "post_link",
+          "dataType": [
+            "text"
+          ],
+          "description": "The URL link to the job posting"
+        },
+        {
+          "name": "seniority_level",
+          "dataType": [
+            "text"
+          ],
+          "description": "The seniority level required for the job"
+        },
+        {
+          "name": "employment_type",
+          "dataType": [
+            "text"
+          ],
+          "description": "The type of employment (e.g., full-time, part-time)"
+        },
+        {
+          "name": "description",
+          "dataType": [
+            "text"
+          ],
+          "description": "The description of the job"
+        },
+        {
+          "name": "job_title_id",
+          "dataType": [
+            "text"
+          ],
+          "description": "The ID of the job title"
+        },
+        {
+          "name": "job_desc_id",
+          "dataType": [
+            "text"
+          ],
+          "description": "The ID of the job description"
         }
       ],
       "vectorizer": "text2vec-openai"
