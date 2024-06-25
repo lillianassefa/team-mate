@@ -8,12 +8,19 @@ from openai import OpenAI
 from dotenv import load_dotenv
 import os
 import datetime
-# from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from weaviate.http_client import HttpClient, HttpHandler
+from weaviate.weaviate_client import WeaviateClient
+
+
 
 
 load_dotenv()
 openai_key = os.getenv("OPENAI_API_KEY")
 weaviate_url = os.getenv("WEAVIATE_URL", "http://0.0.0.0:8080")
+http_client = HttpClient(base_url="http://localhost:8080", headers={"X-OpenAI-Api-Key": openai_key})
+http_handler = HttpHandler(http_client)
+
+weaviate_client = WeaviateClient(http_handler)
 # FastAPI application
 app = FastAPI()
 
@@ -95,13 +102,14 @@ async def handle_chat_message(sid, data):
             "timestamp": data.get("timestamp"),
         }
         sessions[session_id].append(received_message)
+        job_keywords = ['job', 'hiring', 'career', 'vacancy', 'employment']
 
-        if "jobs" in received_message["message"]:
+        if any(keyword in received_message["message"].lower() for keyword in job_keywords):
             job_prompt = (
               "Give me the title of the job the user wants."
                 f"\n\nUser message: {data.get('message')}"
             )
-            response = openai_client.Completion.create(
+            response = openai_client.completions.create(
                 model="gpt-3.5-turbo-instruct",  
                 prompt=job_prompt,
                 max_tokens=150
@@ -127,7 +135,7 @@ async def handle_chat_message(sid, data):
                     }}
                 }}
                 """
-            final_response = await weaviate_interface.client.run_query(query_body)
+            final_response = await weaviate_client.run_query(query_body)
             jobs = final_response['data']['Get']['JobPosting']
             job_list = []
             for job in jobs:
@@ -151,7 +159,7 @@ async def handle_chat_message(sid, data):
             completion_2 = openai_client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": "You are a helpful assistant that aids in educational and training activities I want you to give this list to the user with a good readable format."},
+                    {"role": "system", "content": "You are a helpful assistant that aids in educational and training activities I want you to give this list to the user with your insight inputs to it."},
                     {"role": "user", "content": formatted_job_list}
                 ]
             )
@@ -160,7 +168,7 @@ async def handle_chat_message(sid, data):
 
             response_message = {
             "id": data.get("id") + "_response",
-            "textResponse":  openai_response,
+            "textResponse":  f"Here are some jobs you can check:\n{openai_response}",
             "isUserMessage": False,
             "timestamp": "today",
             "isComplete": True,
@@ -176,7 +184,7 @@ async def handle_chat_message(sid, data):
             completion = openai_client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": "You are a helpful assistant that aids in educational and training activities."},
+                    {"role": "system", "content": "You are a helpful assistant that aids in educational and training activities, these are jobs from a dataset I want you to display it in a readable format for the user and give him some suggestions about these vacancies as well"},
                     {"role": "user", "content": prompt}
                 ]
             )
@@ -184,7 +192,7 @@ async def handle_chat_message(sid, data):
             print("type of openai response", openai_response)
             response_message = {
                 "id": data.get("id") + "_response",
-                "textResponse":  openai_response,
+                "textResponse": openai_response,
                 "isUserMessage": False,
                 "timestamp": "today",
                 "isComplete": True,
