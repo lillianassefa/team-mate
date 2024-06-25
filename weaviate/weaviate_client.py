@@ -8,6 +8,7 @@ OBJECTS_ENDPOINT = "/v1/objects"
 BATCH_OBJECTS_ENDPOINT = "/v1/batch/objects"
 
 
+
 class WeaviateClient:
     def __init__(self, http_handler: HttpHandler) -> None:
         self.http_handler = http_handler
@@ -49,3 +50,5 @@ class WeaviateClient:
 
     async def run_query(self, graphql_query: str) -> Dict[str, Any]:
         return await self.http_handler.get_json_response("POST", GRAPHQL_ENDPOINT, {"query": graphql_query})
+    
+    

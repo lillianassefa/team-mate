@@ -1,14 +1,16 @@
-import httpx
 import uvicorn
 import socketio
 from fastapi import FastAPI, File, UploadFile
 from typing import Dict, List
-from chat.csv_loader import load_csv_to_weaviate
+from data.csv_loader import load_csv_to_weaviate
 from weaviate import setup_weaviate_interface
 from openai import OpenAI
 from dotenv import load_dotenv
 import os
 import datetime
+# from apscheduler.schedulers.asyncio import AsyncIOScheduler
+
+
 load_dotenv()
 openai_key = os.getenv("OPENAI_API_KEY")
 weaviate_url = os.getenv("WEAVIATE_URL", "http://0.0.0.0:8080")
@@ -28,10 +30,32 @@ sessions: Dict[str, List[Dict[str, str]]] = {}
 # Weaviate Interface
 weaviate_interface = setup_weaviate_interface()
 
-# OpenAI client
+csv_file_path = '/home/lillian/tenacious/team-mate/data/cleaned_csvfile.csv'
+
+
+
 openai_client = OpenAI()
 
+# scheduler = AsyncIOScheduler()
+
+# def scheduled_data_loading():
+#     asyncio.run(load_csv_data())
+
+# @app.on_event("startup")
+# async def schedule_jobs():
+#     scheduler.add_job(scheduled_data_loading, 'interval', hours=24)
+#     scheduler.start()
 # Print {"Hello":"World"} on localhost:7777
+# @app.on_event("startup")
+# async def startup_event():
+    
+#     csv_file_path = '/home/lillian/tenacious/team-mate/data/all_nov_jobs.csv'
+
+#     await load_csv_to_weaviate(csv_file_path, weaviate_interface.client)
+    
+#     total_records = await weaviate_interface.get_object_count("JobPosting")
+#     print(f"Total records uploaded: {total_records}")
+
 @app.get("/")
 def read_root():
     return {"Hello": "World"}
@@ -88,7 +112,7 @@ async def handle_chat_message(sid, data):
             ]
         )
         openai_response = completion.choices[0].message.content
-        print("type of openai respons", openai_response)
+        print("type of openai response", openai_response)
         response_message = {
             "id": data.get("id") + "_response",
             "textResponse":  openai_response,
@@ -104,34 +128,5 @@ async def handle_chat_message(sid, data):
 
     else:
         print(f"No session ID provided by {sid}")
-@app.post("/upload_csv")
-async def upload_csv(file: UploadFile = File(...)):
-    try:
-        # Save the uploaded file temporarily
-        file_location = f"/tmp/{file.filename}"
-        with open(file_location, "wb+") as file_object:
-            file_object.write(file.file.read())
-
-        # Process the CSV file and upload data to Weaviate
-        await load_csv_to_weaviate(file_location)
-        return {"status": "success", "detail": "CSV file processed and data uploaded to Weaviate."}
-    except Exception as e:
-        return {"status": "error", "detail": str(e)}
-async def call_upload_csv(csv_file_path: str):
-    url = "http://0.0.0.0:6789/upload_csv"
-    files = {'file': open(csv_file_path, 'rb')}
-    
-    async with httpx.AsyncClient() as client:
-        response = await client.post(url, files=files)
-        print(response.json())
-
-
-@app.on_event("startup")
-async def trigger_csv_upload():
-    csv_file_path = "/home/lillian/tenacious/team-mate/chat/all_nov_jobs.csv" 
-    await call_upload_csv(csv_file_path)
-    return {"status": "success", "detail": "CSV upload triggered."}
-
-
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=6789, lifespan="on", reload=True)

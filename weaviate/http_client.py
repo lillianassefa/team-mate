@@ -16,7 +16,7 @@ class HttpClient:
 
     async def make_request(self, method: str, endpoint: str, data: Optional[Dict[str, Any]] = None) -> httpx.Response:
         url = f"{self.base_url}{endpoint}"
-        response = await self.client.request(method, url, headers=self.headers, json=data)
+        response = await self.client.request(method, url, headers=self.headers, json=data,timeout=10000000)
         response.raise_for_status()
         return response
 
