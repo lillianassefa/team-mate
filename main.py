@@ -81,7 +81,6 @@ async def handle_session_init(sid, data):
     print(f"**** Session {session_id} initialized for {sid} session data: {sessions[session_id]}")
     await sio.emit("sessionInit", {"sessionId": session_id, "chatHistory": sessions[session_id]}, room=sid)
 
-# Handle incoming chat messages
 @sio.on("textMessage")
 async def handle_chat_message(sid, data):
     print(f"Message from {sid}: {data}")
@@ -96,35 +95,105 @@ async def handle_chat_message(sid, data):
             "timestamp": data.get("timestamp"),
         }
         sessions[session_id].append(received_message)
-        
-       
-        prompt = (
-          "You are an AI-based personalized agent designed to optimize trainee time and focus. Your scope includes providing personalized interactions, adaptive learning and support, proactive planning and scheduling, blocker resolution, and enhancing collaboration among other trainees."
-            f"\n\nUser message: {data.get('message')}"
-        )
-        
-        
-        completion = openai_client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant that aids in educational and training activities."},
-                {"role": "user", "content": prompt}
-            ]
-        )
-        openai_response = completion.choices[0].message.content
-        print("type of openai response", openai_response)
-        response_message = {
+
+        if "jobs" in received_message["message"]:
+            job_prompt = (
+              "Give me the title of the job the user wants."
+                f"\n\nUser message: {data.get('message')}"
+            )
+            response = openai_client.Completion.create(
+                model="gpt-3.5-turbo-instruct",  
+                prompt=job_prompt,
+                max_tokens=150
+            )
+            print("Here is the answer from the response", response)
+            job_needed = response.choices[0].text.strip()
+            query_body = f"""
+                {{
+                    Get {{
+                        JobPosting(
+                            where: {{
+                                operator: Like,
+                                path: ["description"]
+                                valueString: "{job_needed}"  
+                            }},
+                            limit: 3
+                        ) {{
+                            title
+                            description
+                            company 
+                            location
+                        }}
+                    }}
+                }}
+                """
+            final_response = await weaviate_interface.client.run_query(query_body)
+            jobs = final_response['data']['Get']['JobPosting']
+            job_list = []
+            for job in jobs:
+                job_title = job['title']
+                job_description = job['description']
+                job_company = job['company']
+                job_location = job.get('location', 'No location specified')  
+
+                job_info = {
+                    'Title': job_title,
+                    'Description': job_description,
+                    'Company': job_company,
+                    'Location': job_location
+                }
+
+                job_list.append(job_info)
+            formatted_job_list = "\n".join([
+                f"Title: {job['Title']}, Company: {job['Company']}, Location: {job['Location']}\nDescription: {job['Description'][:100]}..." 
+                for job in job_list
+                    ])
+            completion_2 = openai_client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant that aids in educational and training activities I want you to give this list to the user with a good readable format."},
+                    {"role": "user", "content": formatted_job_list}
+                ]
+            )
+            openai_response = completion_2.choices[0].message.content
+            
+
+            response_message = {
             "id": data.get("id") + "_response",
             "textResponse":  openai_response,
             "isUserMessage": False,
             "timestamp": "today",
             "isComplete": True,
-        }
-        print("here is the response message", response_message)
-        await sio.emit("textResponse", response_message, room=sid)
-        sessions[session_id].append(response_message)
+              }
+            await sio.emit("textResponse", response_message, room=sid)
+            sessions[session_id].append(response_message)
+        else:
+            prompt = (
+              "You are an AI-based personalized agent designed to optimize trainee time and focus. Your scope includes providing personalized interactions, adaptive learning and support, proactive planning and scheduling, blocker resolution, and enhancing collaboration among other trainees."
+                f"\n\nUser message: {data.get('message')}"
+            )
 
-        print(f"Message from {sid} in session {session_id}: {openai_response}")
+            completion = openai_client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant that aids in educational and training activities."},
+                    {"role": "user", "content": prompt}
+                ]
+            )
+            openai_response = completion.choices[0].message.content
+            print("type of openai response", openai_response)
+            response_message = {
+                "id": data.get("id") + "_response",
+                "textResponse":  openai_response,
+                "isUserMessage": False,
+                "timestamp": "today",
+                "isComplete": True,
+            }
+            print("here is the response message", response_message)
+            await sio.emit("textResponse", response_message, room=sid)
+            sessions[session_id].append(response_message)
+
+            print(f"Message from {sid} in session {session_id}: {openai_response}")
 
     else:
         print(f"No session ID provided by {sid}")
